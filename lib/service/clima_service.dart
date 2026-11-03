@@ -12,7 +12,7 @@ class ClimaService {
     // Endereço com as coodernadas de São Paulo
     //current=temperature_2m pedir a temperatura atual.
     final url = Uri.parse(
-      'ttps://api.open-meteo.com/v1/forecast'
+      'https://api.open-meteo.com/v1/forecast'
       '?latitude=-23.55&longitude=-46.63'
       '&current=temperature_2m'
       '&timezone=America%2FSao_Paulo',
@@ -35,7 +35,7 @@ class ClimaService {
     // current é um objeto dentro do JSON recebido
     final atual = dados['current'] as Map<String, dynamic>;
 
-    // num aceita numeros inteuros ou decimais 
+    // num aceita numeros inteuros ou decimais
     //toDouble() garante o yipo double prometido no Future.
     final temperatura = atual['temperature_2m'] as num;
     return temperatura.toDouble();
