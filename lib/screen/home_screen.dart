@@ -39,7 +39,11 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('ClimaApp'),
         actions: [
           // botão para executar a função atualizar
-          IconButton(onPressed: _atualizar, icon: const Icon(Icons.refresh)),
+          IconButton(
+            onPressed: _atualizar,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Atualizar Clima',
+          ),
         ],
       ),
       body: FutureBuilder<Clima>(
@@ -47,20 +51,44 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, snapshot) {
           // Enquanto a resposta não chega, mostra o progresso
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Consultando o clima ...'),
+                ],
+              ),
+            );
           }
 
+          // hasError: o Future terminou com uma exceção
           if (snapshot.hasError) {
+            // mostrar a mensagem expecifica do nosso serviço
+            final erro = snapshot.error;
+            final mensagem = erro is ClimaException
+                ? erro.mensagem
+                : 'Ocorreu um erro inesperado.';
             return Center(
-              child: Column(
-                children: [
-                  const Text('Não foi possivel consultar o clima'),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.wifi_off, size: 48),
+                    const SizedBox(height: 12),
+                    Text(mensagem, textAlign: TextAlign.center),
 
-                  ElevatedButton(
-                    onPressed: _atualizar,
-                    child: const Text('Tentar novamente'),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+
+                    ElevatedButton.icon(
+                      onPressed: _atualizar,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Tentar Novamente'),
+                    ),
+                  ],
+                ),
               ),
             );
           }

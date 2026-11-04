@@ -119,7 +119,7 @@ class ClimaService {
       throw const ClimaException('Resposa invalida da API.');
     } on TypeError {
       throw const ClimaException(
-        'Os dadosrecebidos estão incompletos opu inválidos.',
+        'Os dados recebidos estão incompletos ou inválidos.',
       );
     }
   }
