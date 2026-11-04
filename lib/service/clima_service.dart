@@ -1,10 +1,26 @@
+// Permitir que indentificamos quando o dispositivo não alcança a rede
+import 'dart:io';
+
 // Converter o texto em JSON da resposta em objetos Dart.
 import 'dart:convert';
+
+// Permite reconhecer quando uma operação ultrapassa o tempo de limite
+import 'dart:async';
 
 import 'package:clima_app/models/clima.dart';
 
 // Biblioteca externa usada para fazer requisições HTTP.
 import 'package:http/http.dart' as http;
+
+// Exceção própria: gyarda a mensagem que a tela pode mostrar
+class ClimaException implements Exception {
+  final String mensagem;
+  // Contrutor recebe o texto explicativo do erro
+  const ClimaException(this.mensagem);
+  // Define como a exceção será converida em texto.
+  @override
+  String toString() => mensagem;
+}
 
 // Reúne a logica de comunicação com a API
 class ClimaService {
@@ -54,24 +70,57 @@ class ClimaService {
       '&timezone=America%2FSao_Paulo',
     );
 
-    //esperar  a resposta sem travar a interface
-    // timeout evita aguardar indefinidamente.
-    final respota = await http.get(url).timeout(const Duration(seconds: 12));
+    try {
+      //esperar  a resposta sem travar a interface
+      // timeout evita aguardar indefinidamente.
+      final resposta = await http.get(url).timeout(const Duration(seconds: 12));
 
-    // 200 siginifica que a consulta HTTP foi bem-sucessida
-    if (respota.statusCode != 200) {
-      // Lança o erro para interface poder informar a falhar
-      throw Exception('Erro HTTP: ${respota.statusCode}');
+      // 200 siginifica que a consulta HTTP foi bem-sucessida
+      if (resposta.statusCode != 200) {
+        // Lança o erro para interface poder informar a falhar
+        throw const ClimaException(
+          'O serviço de clima está indisponivel. Tente novamente.',
+        );
+      }
+
+      // JsonDecode transforma o texto JSON em dados Dart.
+      // Map<String, dynamic> indica um objeto JSON.
+      final dados = jsonDecode(resposta.body);
+      if (dados is! Map<String, dynamic>) {
+        throw const ClimaException('Resposta inesperada da API.');
+      }
+
+      // current é um objeto dentro do JSON recebido
+      final atual = dados['current'];
+      if (atual is! Map<String, dynamic>) {
+        throw const ClimaException('Dados Atuais indisponíveis.');
+      }
+      // O modelo faz a conversão de chaves JSON em campos Dart.
+      // Erros de tipo ou campos ausentes serão tratados abaixo.
+      return Clima.fromJson(atual);
+    } on ClimaException {
+      // Preserva as mensagem que nos criamos la em cima
+      rethrow;
+    } on SocketException {
+      // Sem rede. DNS indisponivel ou conexão recusada
+      throw const ClimaException(
+        'Sem conexão coma internet. Verifique sua Rede.',
+      );
+    } on TimeoutException {
+      // A API demorou mais que o tempo permitido
+      throw ClimaException('A consulta demorou de mais. Tente novamente.');
+    } on http.ClientException {
+      // Outros problemas reportados pelo Cliente
+      throw const ClimaException(
+        'Não foi possivel conectar ao servidor de clima.',
+      );
+    } on FormatException {
+      // O texto retornado não contém um JSON válido.
+      throw const ClimaException('Resposa invalida da API.');
+    } on TypeError {
+      throw const ClimaException(
+        'Os dadosrecebidos estão incompletos opu inválidos.',
+      );
     }
-
-    // JsonDecode transforma o texto JSON em dados Dart.
-    // Map<String, dynamic> indica um objeto JSON.
-    final dados = jsonDecode(respota.body) as Map<String, dynamic>;
-
-    // current é um objeto dentro do JSON recebido
-    final atual = dados['current'] as Map<String, dynamic>;
-
-    // O modelo faz a conversão de chaves JSON em campos Dart.
-    return Clima.fromJson(atual);
   }
 }
