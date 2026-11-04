@@ -1,3 +1,4 @@
+import 'package:clima_app/models/clima.dart';
 import 'package:clima_app/service/clima_service.dart';
 import 'package:flutter/material.dart';
 
@@ -13,18 +14,21 @@ class _HomeScreenState extends State<HomeScreen> {
   final ClimaService _servico = ClimaService();
 
   // Guarda a opeção assincrona de busca
-  late Future<double> _temperatura;
+  // late Future<double> _temperatura;
+  late Future<Clima> _clima;
 
   @override
   void initState() {
     super.initState();
     // iniciamos a consulta um vez ao abrir a tela
-    _temperatura = _servico.buscarTemperatura();
+    // _temperatura = _servico.buscarTemperatura();
+    _clima = _servico.buscarClima();
   }
 
   void _atualizar() {
     setState(() {
-      _temperatura = _servico.buscarTemperatura();
+      // _temperatura = _servico.buscarTemperatura();
+      _clima = _servico.buscarClima();
     });
   }
 
@@ -38,8 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(onPressed: _atualizar, icon: const Icon(Icons.refresh)),
         ],
       ),
-      body: FutureBuilder<double>(
-        future: _temperatura,
+      body: FutureBuilder<Clima>(
+        future: _clima,
         builder: (context, snapshot) {
           // Enquanto a resposta não chega, mostra o progresso
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -61,10 +65,11 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          final temperatura = snapshot.data;
+          // final temperatura = snapshot.data;
+          final clima = snapshot.data;
 
-          if (temperatura == null) {
-            return const Center(child: Text('Temperatura indisponivel'));
+          if (clima == null) {
+            return const Center(child: Text('Dados de clima indisponíveis.'));
           }
 
           return Center(
@@ -74,9 +79,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Icon(Icons.thermostat, size: 60),
                 const Text('São Paulo'),
                 Text(
-                  '${temperatura.toStringAsFixed(1)} °C',
+                  '${clima.temperatura.toStringAsFixed(1)} °C',
                   style: const TextStyle(fontSize: 36),
                 ),
+                Text(
+                  'Sensação: '
+                  '${clima.sensacaoTermica.toStringAsFixed(1)} °C',
+                ),
+
+                Text('Umidade: ${clima.umidade}%'),
+                Text('Vento: ${clima.vento.toStringAsFixed(1)} km/h'),
               ],
             ),
           );
