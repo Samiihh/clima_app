@@ -59,7 +59,8 @@ class ClimaService {
     return temperatura.toDouble();
   }
 
-  Future<Clima> buscarClima() async {
+  // a forma antiga de fazer busca do nosso clima
+  Future<Clima> buscarClimaAntiga() async {
     // Endereço com as coodernadas de São Paulo
     //current=temperature_2m pedir a temperatura atual.
     final url = Uri.parse(
@@ -71,6 +72,72 @@ class ClimaService {
     );
 
     try {
+      //esperar  a resposta sem travar a interface
+      // timeout evita aguardar indefinidamente.
+      final resposta = await http.get(url).timeout(const Duration(seconds: 12));
+
+      // 200 siginifica que a consulta HTTP foi bem-sucessida
+      if (resposta.statusCode != 200) {
+        // Lança o erro para interface poder informar a falhar
+        throw const ClimaException(
+          'O serviço de clima está indisponivel. Tente novamente.',
+        );
+      }
+
+      // JsonDecode transforma o texto JSON em dados Dart.
+      // Map<String, dynamic> indica um objeto JSON.
+      final dados = jsonDecode(resposta.body);
+      if (dados is! Map<String, dynamic>) {
+        throw const ClimaException('Resposta inesperada da API.');
+      }
+
+      // current é um objeto dentro do JSON recebido
+      final atual = dados['current'];
+      if (atual is! Map<String, dynamic>) {
+        throw const ClimaException('Dados Atuais indisponíveis.');
+      }
+      // O modelo faz a conversão de chaves JSON em campos Dart.
+      // Erros de tipo ou campos ausentes serão tratados abaixo.
+      return Clima.fromJson(atual);
+    } on ClimaException {
+      // Preserva as mensagem que nos criamos la em cima
+      rethrow;
+    } on SocketException {
+      // Sem rede. DNS indisponivel ou conexão recusada
+      throw const ClimaException(
+        'Sem conexão coma internet. Verifique sua Rede.',
+      );
+    } on TimeoutException {
+      // A API demorou mais que o tempo permitido
+      throw ClimaException('A consulta demorou de mais. Tente novamente.');
+    } on http.ClientException {
+      // Outros problemas reportados pelo Cliente
+      throw const ClimaException(
+        'Não foi possivel conectar ao servidor de clima.',
+      );
+    } on FormatException {
+      // O texto retornado não contém um JSON válido.
+      throw const ClimaException('Resposa invalida da API.');
+    } on TypeError {
+      throw const ClimaException(
+        'Os dados recebidos estão incompletos ou inválidos.',
+      );
+    }
+  }
+
+  // Nova forma de busca clima passando a cidade
+  Future<Clima> buscarClima(String cidade) async {
+    final nome = cidade.trim();
+    if (nome.isEmpty) {
+      throw const ClimaException('Digite o nomede uma cidade.');
+    }
+
+   
+    try {
+
+      final geoUrl = Uri.http(
+        'geocoding-api.open'
+      )
       //esperar  a resposta sem travar a interface
       // timeout evita aguardar indefinidamente.
       final resposta = await http.get(url).timeout(const Duration(seconds: 12));
