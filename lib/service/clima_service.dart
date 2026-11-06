@@ -12,6 +12,8 @@ import 'package:clima_app/models/clima.dart';
 // Biblioteca externa usada para fazer requisições HTTP.
 import 'package:http/http.dart' as http;
 
+import 'package:flutter/foundation.dart';
+
 // Exceção própria: gyarda a mensagem que a tela pode mostrar
 class ClimaException implements Exception {
   final String mensagem;
@@ -132,29 +134,72 @@ class ClimaService {
       throw const ClimaException('Digite o nomede uma cidade.');
     }
 
-   
     try {
+      final geoUrl = Uri.https('geocoding-api.open-meteo.com', '/v1/search', {
+        'name': nome,
+        'count': '1',
+        'language': 'pt',
+        'format': 'json',
+      });
 
-      final geoUrl = Uri.http(
-        'geocoding-api.open'
-      )
       //esperar  a resposta sem travar a interface
       // timeout evita aguardar indefinidamente.
-      final resposta = await http.get(url).timeout(const Duration(seconds: 12));
+      final geoResposta = await http
+          .get(geoUrl)
+          .timeout(const Duration(seconds: 12));
 
       // 200 siginifica que a consulta HTTP foi bem-sucessida
-      if (resposta.statusCode != 200) {
+      if (geoResposta.statusCode != 200) {
         // Lança o erro para interface poder informar a falhar
-        throw const ClimaException(
-          'O serviço de clima está indisponivel. Tente novamente.',
-        );
+        throw const ClimaException('Falha ao localizar cidade.');
       }
 
       // JsonDecode transforma o texto JSON em dados Dart.
       // Map<String, dynamic> indica um objeto JSON.
+      final geoDados = jsonDecode(geoResposta.body);
+      if (geoDados is! Map<String, dynamic>) {
+        throw const ClimaException('Resposta da localização inválida.');
+      }
+
+      // results é a lista de cidades encontradas
+      final resultados = geoDados['results'];
+      if (resultados is! List || resultados.isEmpty) {
+        throw const ClimaException('Cidade não encontrada.');
+      }
+
+      debugPrint('RESULTADO: $resultados');
+      debugPrint('Tipo: ${resultados.first.runtimeType}');
+      final local = resultados.first;
+      if (local is! Map<String, dynamic>) {
+        throw const ClimaException('Localização inválida.');
+      }
+
+      // num aceita tanto numeros inteiros como decimais.
+      final latitude = local['latitude'];
+      final longitude = local['longitude'];
+      if (latitude is! num || longitude is! num) {
+        throw const ClimaException(' Coordenadas indisponíveis.');
+      }
+
+      final climaUrl = Uri.https('api.open-meteo.com', '/v1/forecast', {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+        'current':
+            'temperature_2m,apparent_temperature,'
+            'relative_humidity_2m,wind_speed_10m',
+        'timezone': 'auto',
+      });
+
+      final resposta = await http
+          .get(climaUrl)
+          .timeout(const Duration(seconds: 12));
+      if (resposta.statusCode != 200) {
+        throw const ClimaException('Falha ao consultar clima.');
+      }
+
       final dados = jsonDecode(resposta.body);
       if (dados is! Map<String, dynamic>) {
-        throw const ClimaException('Resposta inesperada da API.');
+        throw const ClimaException('Resposta de clima inválida.');
       }
 
       // current é um objeto dentro do JSON recebido
