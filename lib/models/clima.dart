@@ -1,14 +1,16 @@
-//MODELO: representa uma resposat do clima com tipos conhecidos
-// Cada objeto Clima guarda informações da mesma consulta
 
+// Modelo que representa os dados meteorológicos de uma consulta com tipos conhecidos.
 class Clima {
-  // final o valor é definido no contrutor e não muda depois
+  // final impede reatribuição após a construção. Temperatura e sensação estão em °C.
   final double temperatura;
   final double sensacaoTermica;
+  // Umidade relativa em porcentagem; int representa um número inteiro.
   final int umidade;
+  // Velocidade do vento em km/h; double representa um número decimal.
   final double vento;
 
-  // required: quem cria Clima, precisa fornecer cada campo
+  // required exige cada argumento nomeado; this atribui o valor ao campo.
+  // const permite criar instâncias constantes.
   const Clima({
     required this.temperatura,
     required this.sensacaoTermica,
@@ -16,7 +18,10 @@ class Clima {
     required this.vento,
   });
  
- //factory Clima.fromJson() é um construtor nomeado que cria u, objeto a partir do Map recebido
+  // Construtor factory nomeado que converte o mapa da API em um Clima.
+  // String é o tipo das chaves; dynamic permite valores de diferentes tipos.
+  // as num exige um número; toDouble e toInt ajustam os tipos dos campos.
+  // Valores ausentes ou incompatíveis geram erros tratados pelo serviço.
   factory Clima.fromJson(Map<String, dynamic> json) {
     return Clima(
       temperatura: (json['temperature_2m'] as num).toDouble(),
