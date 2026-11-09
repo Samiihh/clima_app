@@ -307,7 +307,6 @@ Na revisão, confira se a cidade está correta, se os estados de carregamento e 
 - [Pacote http](https://pub.dev/packages/http)
 - [Open-Meteo: API meteorológica](https://open-meteo.com/en/docs)
 - [Open-Meteo: geocodificação](https://open-meteo.com/en/docs/geocoding-api)
-- [Meu Perfil: referência de organização deste material](https://github.com/Samiihh/meu_perfil)
 
 ## 💡 Uma sugestão de estudo
 
